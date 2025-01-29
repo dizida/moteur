@@ -211,7 +211,7 @@ void espNowOnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int 
   }
 
   // Si l'état du vibreur est "on" ou "off" dans la donnée reçue
-  if (espNow_incomingMessage.bool0 == 1)
+  if (espNow_incomingMessage.bool0 == true)
   {
     Serial.println("Vibreur activé !");
     digitalWrite(vibPin, HIGH);  // Active le vibreur
