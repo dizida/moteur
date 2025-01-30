@@ -1,49 +1,3 @@
-// #include <Arduino.h>
-
-
-// int moteur_vibration = 26; // Broche du moteur a virabtion
-// int bouton = 25;
-
-// void setup() {
-//   Serial.begin(115200);
-//     pinMode(moteur_vibration,OUTPUT); // On met la broche du moteur en sortie
-//     pinMode(bouton, INPUT);
-// }
- 
-// void loop(){
-//   //digitalWrite(moteur_vibration, HIGH);
-//    // Lecture de l'état du bouton
-//   int etatBouton = digitalRead(bouton);
-
-//   if (etatBouton == HIGH) { // Bouton appuyé (-> LOW)
-//     Serial.println("Bouton appuyé");
-//     digitalWrite(moteur_vibration, LOW); // Arrêter la vibration
-//     Serial.println("Moteur de vibration stop");
-//   } 
-// }
-
-
-// #include <Arduino.h>
-
-
-// int moteur_vibration = 26; // Broche du moteur a virabtion
- 
-// void setup() {
-//   Serial.begin(115200);
-//     pinMode(moteur_vibration,OUTPUT); // On met la broche du moteur en sortie
-// }
- 
-// void loop(){
-//     digitalWrite(moteur_vibration, HIGH); //On allume le moteur
-//     delay(1000); // On fait une pause d'une seconde
-//     digitalWrite(moteur_vibration, LOW); // On éteint le moteur
-//     delay(1000);
-// }
-
-//else {
- //  digitalWrite(moteur_vibration, HIGH); // Démarrer la vibration
-  //}
-
 #include <Arduino.h>
 
 // Déclaration des broches
@@ -209,9 +163,9 @@ void espNowOnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int 
     Serial.println("Message does not correspond to this board Id");
     return;
   }
-
+  Serial.println("Message reçu du Sink");
   // Si l'état du vibreur est "on" ou "off" dans la donnée reçue
-  if (espNow_incomingMessage.bool0 == true)
+  if (espNow_incomingMessage.bool0 == 1)
   {
     Serial.println("Vibreur activé !");
     digitalWrite(vibPin, HIGH);  // Active le vibreur
@@ -341,5 +295,5 @@ if (digitalRead(btnPin) == HIGH)  // Si le bouton est appuyé
 #endif
   }
 
-
 }
+
