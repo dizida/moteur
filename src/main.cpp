@@ -1,50 +1,4 @@
-#include <Arduino.h>
-
-// Déclaration des broches
-int moteur_vibration = 26; // Broche du moteur à vibration
-int bouton = 25;           // Broche du bouton
-
-bool moteurActif = true;   // Variable d'état pour suivre l'état du moteur
-int etatBoutonPrecedent = LOW; // État précédent du bouton (LOW au repos)
-
-void setup() {
-  Serial.begin(115200); // Initialisation de la communication série
-
-  // Configuration des broches
-  pinMode(moteur_vibration, OUTPUT); // Broche du moteur en sortie
-  pinMode(bouton, INPUT);            // Bouton en entrée sans pull-up/pull-down interne
-
-  // Démarrage initial du moteur
-  digitalWrite(moteur_vibration, HIGH); // Activer la vibration au démarrage
-  Serial.println("Moteur de vibration activé au démarrage.");
-}
-
-void loop() {
-  // Lecture de l'état actuel du bouton
-  int etatBouton = digitalRead(bouton);
-
-  // Vérifier s'il y a un changement d'état (transition de LOW à HIGH)
-  if (etatBouton == HIGH && etatBoutonPrecedent == LOW) { // Bouton vient d'être appuyé
-    Serial.println("Transition détectée : bouton appuyé.");
-
-    if (moteurActif) {
-      // Si le moteur est actif, l'arrêter
-      digitalWrite(moteur_vibration, LOW);
-      Serial.println("Moteur de vibration arrêté.");
-      moteurActif = false; // Désactiver définitivement
-    } else {
-      Serial.println("Moteur déjà désactivé.");
-    }
-  }
-
-  // Mettre à jour l'état précédent du bouton
-  etatBoutonPrecedent = etatBouton;
-
-  delay(50); // Petite pause pour éviter les rebonds
-}
-
 ///////////////////////////////////////////CODE PROF//////////////////////////////////////////////
-
 
 /*********
   Rui Santos & Sara Santos - Random Nerd Tutorials
@@ -67,10 +21,9 @@ const long interval = 2000;       // Interval at which to publish sensor reading
 unsigned int readingId = 0;
 
 // TODO : change variables below according to project needs
-const int vibPin = 26;  // Pin du vibreur 
-const int btnPin = 25;  // Pin du bouton
-bool vibreurEtat = false;  // État du vibreur (initialement éteint)
-
+const int vibPin = 26;    // Pin du vibreur
+const int btnPin = 25;    // Pin du bouton
+bool vibreurEtat = false; // État du vibreur (initialement éteint)
 
 // MAC Address of the sink
 // TODO : enter your sink MAC address here
@@ -93,6 +46,7 @@ typedef struct struct_mote2sinkMessage
   float data3;
   float data4;
   float data5;
+  float data6;
   bool bool0;
   bool bool1;
   bool bool2;
@@ -125,7 +79,6 @@ float floatMap(float x, float in_min, float in_max, float out_min, float out_max
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-
 // ================================================================================================
 // Functions for ESP NOW communications
 //
@@ -148,7 +101,7 @@ void espNowOnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int 
   Serial.println(espNow_incomingMessage.data0);
   Serial.print(" - data1  : ");
   Serial.println(espNow_incomingMessage.data1);
-  Serial.print(" - bool0 (vibreur): ");
+  Serial.print(" - bool0 (vibreur) : ");
   Serial.println(espNow_incomingMessage.bool0);
   Serial.print(" - bool1 : ");
   Serial.println(espNow_incomingMessage.bool1);
@@ -163,17 +116,26 @@ void espNowOnDataRecv(const uint8_t *mac_addr, const uint8_t *incomingData, int 
     Serial.println("Message does not correspond to this board Id");
     return;
   }
-  Serial.println("Message reçu du Sink");
+
+  ////// MESSAGE RECU PAR LE SINK POUR METTRE LE VIBREUR OFF////
+
+  // Serial.println("Message reçu du Sink");
+  // if (espNow_incomingMessage.bool1 == 0)
+  // {
+  //   Serial.println("Désactive le vibreur maintenant !");
+  //   digitalWrite(vibPin, LOW); // Désactive le vibreur
+  // }
+
   // Si l'état du vibreur est "on" ou "off" dans la donnée reçue
   if (espNow_incomingMessage.bool0 == 1)
   {
     Serial.println("Vibreur activé !");
-    digitalWrite(vibPin, HIGH);  // Active le vibreur
+    digitalWrite(vibPin, HIGH); // Active le vibreur
   }
   else
   {
     Serial.println("Vibreur désactivé !");
-    digitalWrite(vibPin, LOW);   // Désactive le vibreur
+    digitalWrite(vibPin, LOW);
   }
 }
 
@@ -208,8 +170,8 @@ void setup()
   Serial.begin(115200);
 
   // TODO : Here perform setup of hardware which is connected to sink (RFID, dht, LEDs, etc.), if needed
-  pinMode(vibPin, OUTPUT);  // Pin pour le vibreur
-  pinMode(btnPin, INPUT);   // Pin pour le bouton
+  pinMode(vibPin, OUTPUT); // Pin pour le vibreur
+  pinMode(btnPin, INPUT);  // Pin pour le bouton
 
   //-----------------------------------------------------------
   // Settings for Wifi configuration
@@ -257,29 +219,44 @@ void setup()
 // only an example (simulation of temperature and humidity)
 void loop()
 {
+  //   if (digitalRead(btnPin) == HIGH)  // Si le bouton est appuyé
+  // {
+  //   Serial.println("bouton appuyé");
+  //   vibreurEtat = false;  // l'état du vibreur à stop
+  //   digitalWrite(vibPin, vibreurEtat);  // Allume ou éteint le vibreur
+  //   espNow_incomingMessage.bool0 == 0;
+  //   Serial.println(vibreurEtat ? "Vibreur ON" : "Vibreur OFF");
+
+  // }
   unsigned long currentMillis = millis();
   if (currentMillis - previousMillis >= interval)
   {
-#if BOARD_ID == 0 || BOARD_ID == 1
     // Save the last time a new reading was published
     previousMillis = currentMillis;
     espNow_moteData = {};
-
+    boolean alarme = false;
     // Set values to send
     espNow_moteData.boardId = BOARD_ID;
     espNow_moteData.readingId = readingId++;
     espNow_moteData.timeTag = currentMillis;
-    espNow_moteData.bool0 = vibreurEtat;
+    if (digitalRead(btnPin) == HIGH) // Si le bouton est appuyé
+    {
+      // digitalWrite(vibPin, LOW);
+      espNow_moteData.bool1 = 1;
+      Serial.println("bouton appuyé");
+
+      // espNow_moteData.bool1 = 1;
+    }
+    else
+    {
+      espNow_moteData.bool1 = 0;
+      // espNow_moteData.bool1 = 0;
+      Serial.println("bouton pas appuyé");
+    }
+
     espNow_moteData.readingId = readingId++;
     char textMsg[] = "Hi Sink, here's my data for you: ";
     memcpy(&espNow_moteData.text, textMsg, sizeof(textMsg));
-
-if (digitalRead(btnPin) == HIGH)  // Si le bouton est appuyé
-{
-  vibreurEtat = false;  // l'état du vibreur à stop
-  digitalWrite(vibPin, vibreurEtat);  // Allume ou éteint le vibreur
-  Serial.println(vibreurEtat ? "Vibreur ON" : "Vibreur OFF");
-}
 
     // Send message via ESP-NOW
     esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *)&espNow_moteData, sizeof(espNow_moteData));
@@ -292,8 +269,6 @@ if (digitalRead(btnPin) == HIGH)  // Si le bouton est appuyé
     {
       Serial.println("Error sending the data");
     }
-#endif
+
   }
-
 }
-
